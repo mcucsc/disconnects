@@ -39,17 +39,21 @@ cms_state <- read.csv(here("01_raw-data", "CMS_Statements_111420.csv"),
 
 cms_info <- read.csv(here("01_raw-data", "CMS_VotingRecords_111420.csv"),
                      stringsAsFactors = F) %>% 
-  select(App.I.Year, App.II.Year, MoU.Annex, Species.Name) %>% 
-  rename("Species"="Species.Name")
+  select(Overall.Year, Species.Name) %>% 
+  rename("Species"="Species.Name") %>% 
+  rename("Year"="Overall.Year")
 
 #Changing from wide to long format
 cms_prop_long <- melt(cms_prop, id = c("Alpha3Code","CountryName"), variable.name = "Species") %>% 
-  drop_na() 
-cms_state_long <- melt(cms_state, id = c("Alpha3Code","CountryName"), variable.name = "Species") %>% 
-  drop_na()
+  drop_na() %>% 
+  separate(Species, c("Genus", "Species","Year")) %>% 
+  unite(Species.New, Genus, Species, sep = " ") %>% 
+  rename("Species" = "Species.New")  %>% 
+  na_if("")
+cms_prop_long$Year<- as.integer(cms_prop_long$Year)
 
 #Combining with listing year and Appendix information ##Need to clearn up.
-cms_prop_combo <- left_join(cms_info,cms_prop_long, by="Species") %>% 
+cms_prop_combo <- left_join(cms_prop_long,cms_info, by=c("Species")) %>% 
   mutate_all(list(~na_if(.,""))) %>% 
   mutate_all(list(~na_if(.,"-")))
 cms_state_combo <- left_join(cms_info,cms_state_long, by="Species") %>% 
@@ -84,11 +88,19 @@ cites_state <- read.csv(here("01_raw-data", "CITES_Statements_111820.csv"),
 
 cites_info <- read.csv(here("01_raw-data", "CITES_VotingRecords_111820.csv"),
                      stringsAsFactors = F) %>% 
-  select(App.I.Year, App.II.Year, MoU.Annex, Species.Name) %>% 
-  rename("Species"="Species.Name")
+  select(Listing.Year, Species)
 
 #Changing from long to wide format
 cites_prop_long <- melt(cites_prop, id = c("Alpha3Code","CountryName"), variable.name = "Species") %>% 
   drop_na() 
 cites_state_long <- melt(cites_state, id = c("Alpha3Code","CountryName"), variable.name = "Species") %>% 
   drop_na()
+
+#Combining with listing year and Appendix information
+cites_prop_combo <- left_join(cites_info,cites_prop_long, by="Species") %>% 
+  mutate_all(list(~na_if(.,""))) %>% 
+  mutate_all(list(~na_if(.,"-")))
+cites_state_combo <- left_join(cites_info,cites_state_long, by="Species") %>% 
+  mutate_all(list(~na_if(.,""))) %>% 
+  mutate_all(list(~na_if(.,"-")))
+
