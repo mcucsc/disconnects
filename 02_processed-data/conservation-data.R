@@ -33,7 +33,7 @@ cms_state <- read.csv(here("01_raw-data", "CMS_Statements_111420.csv"),
   rename("Mobula spp." = "Mobula.spp.") %>% 
   rename("Sphyrna spp." = "Sphyrna.spp.") %>% 
   rename("Prionace glauca" = "Prionace.glauca") %>% 
-  rename("Rhincodon typus 2017" = "Rhincodon.typus.2017") %>% 
+  rename("Rhincodon typus" = "Rhincodon.typus") %>% 
   rename("Sphyrna zygaena" = "Sphyrna.zygaena") %>% 
   rename("Carcharhinus longimanus" = "Carcharhinus.longimanus")
 
@@ -52,16 +52,22 @@ cms_prop_long <- melt(cms_prop, id = c("Alpha3Code","CountryName"), variable.nam
   na_if("")
 cms_prop_long$Year<- as.integer(cms_prop_long$Year)
 
+cms_prop_long_edited <- read.csv(here("01_raw-data", "cms_prop_toedit.csv"),
+                     stringsAsFactors = F) %>% 
+  select("Alpha3Code","CountryName","Species","Year","value")
+
+cms_state_long <- melt(cms_state, id = c("Alpha3Code","CountryName"), variable.name = "Species") %>% 
+  drop_na()
+
 #Combining with listing year and Appendix information ##Need to clearn up.
-cms_prop_combo <- left_join(cms_prop_long,cms_info, by=c("Species")) %>% 
-  mutate_all(list(~na_if(.,""))) %>% 
-  mutate_all(list(~na_if(.,"-")))
-cms_state_combo <- left_join(cms_info,cms_state_long, by="Species") %>% 
+cms_prop_combo <- cms_prop_long_edited
+cms_info_state <- cms_info %>% 
+  slice(4:13)
+cms_state_combo <- left_join(cms_info_state,cms_state_long, by="Species") %>% 
   mutate_all(list(~na_if(.,""))) %>% 
   mutate_all(list(~na_if(.,"-")))
 
 ###CITES Information###
-
 cites_prop <- read.csv(here("01_raw-data", "CITES_Proponants_111820.csv"),
                      stringsAsFactors = F) %>% 
   rename("Rhincodon typus" = "Rhincodon.typus") %>% 
@@ -104,3 +110,17 @@ cites_state_combo <- left_join(cites_info,cites_state_long, by="Species") %>%
   mutate_all(list(~na_if(.,""))) %>% 
   mutate_all(list(~na_if(.,"-")))
 
+###Exporting Tidy Data###
+
+write.csv(x = cms_prop_combo,
+          file = here("02_processed-data", "cms_prop_combo.csv"),
+          row.names = F)
+write.csv(x = cms_state_combo,
+          file = here("02_processed-data", "cms_state_combo.csv"),
+          row.names = F)
+write.csv(x = cites_prop_combo,
+          file = here("02_processed-data", "cites_prop_combo.csv"),
+          row.names = F)
+write.csv(x = cites_state_combo,
+          file = here("02_processed-data", "cites_state_combo.csv"),
+          row.names = F)
